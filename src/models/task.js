@@ -14,13 +14,15 @@ const taskSchema = new mongoose.Schema({
     priority: {
       type: Number,
       default: 2
+    },
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: 'User'
     }
   }
 )
 
-// taskSchema.pre('save', async function (next) {
-//   next()
-// })
 
 const Task = mongoose.model('Task', taskSchema )
 
