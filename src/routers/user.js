@@ -3,6 +3,7 @@ const multer = require('multer')
 const sharp = require('sharp')
 const User = require('../models/user')
 const auth = require('../middleware/auth')
+const { sendWelcomeEmail, sendCancelationEmail } = require('../email/account')
 
 const router = new express.Router()
 
@@ -53,6 +54,7 @@ router.post('/users', async (req, res) => {
   
   try {
     await user.save()
+    sendWelcomeEmail(user.email, user.name)
     const token = await user.generateAuthToken()
     res.status(201).send({ user, token })
   } catch (e) {
@@ -130,7 +132,7 @@ router.delete('/users/me/avatar', auth, async (req, res) => {
   req.user.avatar = undefined
   try {
     await req.user.save()
-    res.send()
+    res.status(204).send()
   } catch (e) {
     res.status(400).send(e)
   }
@@ -138,8 +140,9 @@ router.delete('/users/me/avatar', auth, async (req, res) => {
 
 router.delete('/users/me', auth, async (req, res) => {
   try {
-      await req.user.remove()
-      res.send(req.user)
+    await req.user.remove()
+    sendCancelationEmail(req.user.email, req.user.name)
+    res.status(204).send(req.user)
   } catch {
     res.status(500).send()
   }
@@ -150,7 +153,8 @@ router.delete('/users', async (req, res) => {
   try {
     const user = await User.findOneAndDelete({ email })
     if (!user) { return res.status(404).send() }
-    res.send(user)
+    await req.user.remove()
+    res.status(204).send(user)
   } catch {
     res.status(500).send()
   }
